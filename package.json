@@ -6,6 +6,7 @@
   "license": "MIT",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "require": "./dist/devalue.js",
       "import": "./dist/devalue.mjs"
     }
@@ -20,7 +21,7 @@
     "build": "siroc build",
     "lint": "eslint --ext .ts,.js .",
     "prepack": "yarn build",
-    "release": "yarn test && standard-version && git push --follow-tags && npm publish",
+    "release": "yarn test && standard-version --release-as patch && git push --follow-tags && npm publish",
     "test": "yarn lint && jest"
   },
   "devDependencies": {
