@@ -1,4 +1,3 @@
-const consola = require("consola");
 const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
 const unsafeChars = /[<>\b\f\n\r\t\0\u2028\u2029]/g;
 const reserved =
@@ -20,25 +19,21 @@ const escaped: Record<string, string> = {
 const objectProtoOwnPropertyNames = Object.getOwnPropertyNames(Object.prototype)
   .sort()
   .join("\0");
-// workaround to disable warnings
-const defaultLogLevel = process.env.D2JS_ENV_DEVALUE_LOG_LEVEL || "warn";
-const logLimit = parseInt(process.env.D2JS_ENV_DEVALUE_LOG_LIMIT) || 99;
-
-export default function devalue(value: any, level = defaultLogLevel) {
+export default function devalue(value: any) {
   const counts = new Map();
 
   let logNum = 0;
 
   function log(message: string) {
-    if (logNum < logLimit) {
-      consola[level](message);
+    if (logNum < 100) {
+      console.warn(message);
       logNum += 1;
     }
   }
 
   function walk(thing: any) {
     if (typeof thing === "function") {
-      consola[level](`Cannot stringify a function ${thing.name}`);
+      log(`Cannot stringify a function ${thing.name}`);
       return;
     }
 
