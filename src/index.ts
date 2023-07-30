@@ -1,325 +1,352 @@
-const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
-const unsafeChars = /[<>\b\f\n\r\t\0\u2028\u2029]/g;
+const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$'
+const unsafeChars = /[<>\b\f\n\r\t\0\u2028\u2029]/g
 const reserved =
-  /^(?:do|if|in|for|int|let|new|try|var|byte|case|char|else|enum|goto|long|this|void|with|await|break|catch|class|const|final|float|short|super|throw|while|yield|delete|double|export|import|native|return|switch|throws|typeof|boolean|default|extends|finally|package|private|abstract|continue|debugger|function|volatile|interface|protected|transient|implements|instanceof|synchronized)$/;
+  /^(?:do|if|in|for|int|let|new|try|var|byte|case|char|else|enum|goto|long|this|void|with|await|break|catch|class|const|final|float|short|super|throw|while|yield|delete|double|export|import|native|return|switch|throws|typeof|boolean|default|extends|finally|package|private|abstract|continue|debugger|function|volatile|interface|protected|transient|implements|instanceof|synchronized)$/
 const escaped: Record<string, string> = {
-  "<": "\\u003C",
-  ">": "\\u003E",
-  "/": "\\u002F",
-  "\\": "\\\\",
-  "\b": "\\b",
-  "\f": "\\f",
-  "\n": "\\n",
-  "\r": "\\r",
-  "\t": "\\t",
-  "\0": "\\0",
-  "\u2028": "\\u2028",
-  "\u2029": "\\u2029",
-};
+  '<': '\\u003C',
+  '>': '\\u003E',
+  '/': '\\u002F',
+  '\\': '\\\\',
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+  '\0': '\\0',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029'
+}
 const objectProtoOwnPropertyNames = Object.getOwnPropertyNames(Object.prototype)
   .sort()
-  .join("\0");
-export default function devalue(value: any) {
-  const counts = new Map();
+  .join('\0')
+export default function devalue (value: any) {
+  // @ts-ignore
+  const counts = new Map()
 
-  let logNum = 0;
+  let logNum = 0
 
-  function log(message: string) {
+  function log (message: string) {
     if (logNum < 100) {
-      console.warn(message);
-      logNum += 1;
+      // eslint-disable-next-line no-console
+      console.warn(message)
+      logNum += 1
     }
   }
 
-  function walk(thing: any) {
-    if (typeof thing === "function") {
-      log(`Cannot stringify a function ${thing.name}`);
-      return;
+  function walk (thing: any) {
+    if (typeof thing === 'function') {
+      log(`Cannot stringify a function ${thing.name}`)
+      return
     }
 
     if (counts.has(thing)) {
-      counts.set(thing, counts.get(thing) + 1);
-      return;
+      counts.set(thing, counts.get(thing) + 1)
+      return
     }
 
-    counts.set(thing, 1);
+    counts.set(thing, 1)
 
     if (!isPrimitive(thing)) {
-      const type = getType(thing);
+      const type = getType(thing)
 
       switch (type) {
-        case "Number":
-        case "String":
-        case "Boolean":
-        case "Date":
-        case "RegExp":
-          return;
+        case 'Number':
+        case 'String':
+        case 'Boolean':
+        case 'Date':
+        case 'RegExp':
+          return
 
-        case "Array":
-          thing.forEach(walk);
-          break;
+        case 'Array':
+          thing.forEach(walk)
+          break
 
-        case "Set":
-        case "Map":
-          Array.from(thing).forEach(walk);
-          break;
+        case 'Set':
+        case 'Map':
+          // @ts-ignore
+          Array.from(thing).forEach(walk)
+          break
 
         default:
-          const proto = Object.getPrototypeOf(thing);
+          const proto = Object.getPrototypeOf(thing)
 
           if (
             proto !== Object.prototype &&
             proto !== null &&
-            Object.getOwnPropertyNames(proto).sort().join("\0") !==
+            Object.getOwnPropertyNames(proto).sort().join('\0') !==
               objectProtoOwnPropertyNames
           ) {
-            if (typeof thing.toJSON !== "function") {
+            if (typeof thing.toJSON !== 'function') {
               log(
                 `Cannot stringify arbitrary non-POJOs ${thing.constructor.name}`
-              );
+              )
             }
+            // @ts-ignore
           } else if (Object.getOwnPropertySymbols(thing).length > 0) {
             log(
+              // @ts-ignore
               `Cannot stringify POJOs with symbolic keys ${Object.getOwnPropertySymbols(
                 thing
-              ).map((symbol) => symbol.toString())}`
-            );
+                // @ts-ignore
+              ).map(symbol => symbol.toString())}`
+            )
           } else {
-            Object.keys(thing).forEach((key) => walk(thing[key]));
+            Object.keys(thing).forEach(key => walk(thing[key]))
           }
       }
     }
   }
 
-  walk(value);
+  walk(value)
 
-  const names = new Map();
+  // @ts-ignore
+  const names = new Map()
+  // @ts-ignore
   Array.from(counts)
-    .filter((entry) => entry[1] > 1)
+    // @ts-ignore
+    .filter(entry => entry[1] > 1)
+    // @ts-ignore
     .sort((a, b) => b[1] - a[1])
+    // @ts-ignore
     .forEach((entry, i) => {
-      names.set(entry[0], getName(i));
-    });
+      names.set(entry[0], getName(i))
+    })
 
-  function stringify(thing: any): string {
+  function stringify (thing: any): string {
     if (names.has(thing)) {
-      return names.get(thing);
+      return names.get(thing)
     }
 
     if (isPrimitive(thing)) {
-      return stringifyPrimitive(thing);
+      return stringifyPrimitive(thing)
     }
 
-    const type = getType(thing);
+    const type = getType(thing)
 
     switch (type) {
-      case "Number":
-      case "String":
-      case "Boolean":
-        return `Object(${stringify(thing.valueOf())})`;
+      case 'Number':
+      case 'String':
+      case 'Boolean':
+        return `Object(${stringify(thing.valueOf())})`
 
-      case "RegExp":
-        return thing.toString();
+      case 'RegExp':
+        return thing.toString()
 
-      case "Date":
-        return `new Date(${thing.getTime()})`;
+      case 'Date':
+        return `new Date(${thing.getTime()})`
 
-      case "Array":
+      case 'Array':
         const members = thing.map((v: any, i: number) =>
-          i in thing ? stringify(v) : ""
-        );
-        const tail = thing.length === 0 || thing.length - 1 in thing ? "" : ",";
-        return `[${members.join(",")}${tail}]`;
+          i in thing ? stringify(v) : ''
+        )
+        const tail = thing.length === 0 || thing.length - 1 in thing ? '' : ','
+        return `[${members.join(',')}${tail}]`
 
-      case "Set":
-      case "Map":
-        return `new ${type}([${Array.from(thing).map(stringify).join(",")}])`;
+      case 'Set':
+      case 'Map':
+        // @ts-ignore
+        return `new ${type}([${Array.from(thing).map(stringify).join(',')}])`
 
       default:
         if (thing.toJSON) {
-          let json = thing.toJSON();
-          if (getType(json) === "String") {
+          let json = thing.toJSON()
+          if (getType(json) === 'String') {
             // Try to parse the returned data
             try {
-              json = JSON.parse(json);
+              json = JSON.parse(json)
             } catch (e) {}
           }
-          return stringify(json);
+          return stringify(json)
         }
         if (Object.getPrototypeOf(thing) === null) {
           if (Object.keys(thing).length === 0) {
-            return "Object.create(null)";
+            return 'Object.create(null)'
           }
 
           return `Object.create(null,{${Object.keys(thing)
             .map(
-              (key) =>
+              key =>
                 `${safeKey(
                   key
                 )}:{writable:true,enumerable:true,value:${stringify(
                   thing[key]
                 )}}`
             )
-            .join(",")}})`;
+            .join(',')}})`
         }
 
         return `{${Object.keys(thing)
-          .map((key) => `${safeKey(key)}:${stringify(thing[key])}`)
-          .join(",")}}`;
+          .map(key => `${safeKey(key)}:${stringify(thing[key])}`)
+          .join(',')}}`
     }
   }
 
-  const str = stringify(value);
+  const str = stringify(value)
 
   if (names.size) {
-    const params: string[] = [];
-    const statements: string[] = [];
-    const values: string[] = [];
+    const params: string[] = []
+    const statements: string[] = []
+    const values: string[] = []
 
+    // @ts-ignore
     names.forEach((name, thing) => {
-      params.push(name);
+      params.push(name)
 
       if (isPrimitive(thing)) {
-        values.push(stringifyPrimitive(thing));
-        return;
+        values.push(stringifyPrimitive(thing))
+        return
       }
 
-      const type = getType(thing);
+      const type = getType(thing)
 
       switch (type) {
-        case "Number":
-        case "String":
-        case "Boolean":
-          values.push(`Object(${stringify(thing.valueOf())})`);
-          break;
+        case 'Number':
+        case 'String':
+        case 'Boolean':
+          values.push(`Object(${stringify(thing.valueOf())})`)
+          break
 
-        case "RegExp":
-          values.push(thing.toString());
-          break;
+        case 'RegExp':
+          values.push(thing.toString())
+          break
 
-        case "Date":
-          values.push(`new Date(${thing.getTime()})`);
-          break;
+        case 'Date':
+          values.push(`new Date(${thing.getTime()})`)
+          break
 
-        case "Array":
-          values.push(`Array(${thing.length})`);
+        case 'Array':
+          values.push(`Array(${thing.length})`)
           thing.forEach((v: any, i: number) => {
-            statements.push(`${name}[${i}]=${stringify(v)}`);
-          });
-          break;
+            statements.push(`${name}[${i}]=${stringify(v)}`)
+          })
+          break
 
-        case "Set":
-          values.push(`new Set`);
+        case 'Set':
+          values.push('new Set')
           statements.push(
+            // @ts-ignore
             `${name}.${Array.from(thing)
-              .map((v) => `add(${stringify(v)})`)
-              .join(".")}`
-          );
-          break;
+              // @ts-ignore
+              .map(v => `add(${stringify(v)})`)
+              .join('.')}`
+          )
+          break
 
-        case "Map":
-          values.push(`new Map`);
+        case 'Map':
+          values.push('new Map')
+          // @ts-ignore
           statements.push(
+            // @ts-ignore
             `${name}.${Array.from(thing)
+              // @ts-ignore
               .map(([k, v]) => `set(${stringify(k)}, ${stringify(v)})`)
-              .join(".")}`
-          );
-          break;
+              .join('.')}`
+          )
+          break
 
         default:
           values.push(
-            Object.getPrototypeOf(thing) === null ? "Object.create(null)" : "{}"
-          );
+            Object.getPrototypeOf(thing) === null ? 'Object.create(null)' : '{}'
+          )
           Object.keys(thing).forEach((key) => {
-            statements.push(`${name}${safeProp(key)}=${stringify(thing[key])}`);
-          });
+            statements.push(`${name}${safeProp(key)}=${stringify(thing[key])}`)
+          })
       }
-    });
+    })
 
-    statements.push(`return ${str}`);
+    statements.push(`return ${str}`)
 
-    return `(function(${params.join(",")}){${statements.join(
-      ";"
-    )}}(${values.join(",")}))`;
+    return `(function(${params.join(',')}){${statements.join(
+      ';'
+    )}}(${values.join(',')}))`
   } else {
-    return str;
+    return str
   }
 }
 
-function getName(num: number) {
-  let name = "";
+function getName (num: number) {
+  let name = ''
 
   do {
-    name = chars[num % chars.length] + name;
-    num = ~~(num / chars.length) - 1;
-  } while (num >= 0);
+    name = chars[num % chars.length] + name
+    num = ~~(num / chars.length) - 1
+  } while (num >= 0)
 
-  return reserved.test(name) ? `${name}0` : name;
+  return reserved.test(name) ? `${name}0` : name
 }
 
-function isPrimitive(thing: any) {
-  return Object(thing) !== thing;
+function isPrimitive (thing: any) {
+  return Object(thing) !== thing
 }
 
-function stringifyPrimitive(thing: any) {
-  if (typeof thing === "string") return stringifyString(thing);
-  if (thing === void 0) return "void 0";
-  if (thing === 0 && 1 / thing < 0) return "-0";
-  const str = String(thing);
-  if (typeof thing === "number") return str.replace(/^(-)?0\./, "$1.");
-  return str;
+function stringifyPrimitive (thing: any) {
+  if (typeof thing === 'string') {
+    return stringifyString(thing)
+  }
+  // eslint-disable-next-line no-void
+  if (thing === void 0) {
+    return 'void 0'
+  }
+  if (thing === 0 && 1 / thing < 0) {
+    return '-0'
+  }
+  const str = String(thing)
+  if (typeof thing === 'number') {
+    return str.replace(/^(-)?0\./, '$1.')
+  }
+  return str
 }
 
-function getType(thing: any) {
-  return Object.prototype.toString.call(thing).slice(8, -1);
+function getType (thing: any) {
+  return Object.prototype.toString.call(thing).slice(8, -1)
 }
 
-function escapeUnsafeChar(c: string) {
-  return escaped[c] || c;
+function escapeUnsafeChar (c: string) {
+  return escaped[c] || c
 }
 
-function escapeUnsafeChars(str: string) {
-  return str.replace(unsafeChars, escapeUnsafeChar);
+function escapeUnsafeChars (str: string) {
+  return str.replace(unsafeChars, escapeUnsafeChar)
 }
 
-function safeKey(key: string) {
+function safeKey (key: string) {
   return /^[_$a-zA-Z][_$a-zA-Z0-9]*$/.test(key)
     ? key
-    : escapeUnsafeChars(JSON.stringify(key));
+    : escapeUnsafeChars(JSON.stringify(key))
 }
 
-function safeProp(key: string) {
+function safeProp (key: string) {
   return /^[_$a-zA-Z][_$a-zA-Z0-9]*$/.test(key)
     ? `.${key}`
-    : `[${escapeUnsafeChars(JSON.stringify(key))}]`;
+    : `[${escapeUnsafeChars(JSON.stringify(key))}]`
 }
 
-function stringifyString(str: string) {
-  let result = '"';
+function stringifyString (str: string) {
+  let result = '"'
 
   for (let i = 0; i < str.length; i += 1) {
-    const char = str.charAt(i);
-    const code = char.charCodeAt(0);
+    const char = str.charAt(i)
+    const code = char.charCodeAt(0)
 
     if (char === '"') {
-      result += '\\"';
+      result += '\\"'
     } else if (char in escaped) {
-      result += escaped[char];
-    } else if (code >= 0xd800 && code <= 0xdfff) {
-      const next = str.charCodeAt(i + 1);
+      result += escaped[char]
+    } else if (code >= 0xD800 && code <= 0xDFFF) {
+      const next = str.charCodeAt(i + 1)
 
       // If this is the beginning of a [high, low] surrogate pair,
       // add the next two characters, otherwise escape
-      if (code <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
-        result += char + str[++i];
+      if (code <= 0xDBFF && next >= 0xDC00 && next <= 0xDFFF) {
+        result += char + str[++i]
       } else {
-        result += `\\u${code.toString(16).toUpperCase()}`;
+        result += `\\u${code.toString(16).toUpperCase()}`
       }
     } else {
-      result += char;
+      result += char
     }
   }
 
-  result += '"';
-  return result;
+  result += '"'
+  return result
 }

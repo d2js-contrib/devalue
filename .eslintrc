@@ -1,0 +1,6 @@
+{
+  "extends": ["@d2.js/eslint-config-typescript"],
+  "rules": {
+    "no-case-declarations": "off"
+  }
+}
