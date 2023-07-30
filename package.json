@@ -1,6 +1,6 @@
 {
   "name": "@d2js/devalue",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "description": "Gets the job done when JSON.stringify can't",
   "repository": "d2js-contrib/devalue",
   "license": "MIT",
